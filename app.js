@@ -3,13 +3,41 @@
 // ---------- Constants ----------
 
 const MOODS = [
-  { value: 5, label: 'Super', emoji: '🤩', color: '#a8e6cf' },
-  { value: 4, label: 'Good',  emoji: '🙂', color: '#dcedc1' },
-  { value: 3, label: 'Meh',   emoji: '😐', color: '#ffeaa7' },
-  { value: 2, label: 'Bad',   emoji: '🙁', color: '#ffd3b6' },
-  { value: 1, label: 'Awful', emoji: '😫', color: '#ffaaa5' },
+  { value: 5, label: 'Super', color: '#fbe3a4', stroke: '#e0a940' },
+  { value: 4, label: 'Good',  color: '#d8e8c4', stroke: '#7f9e64' },
+  { value: 3, label: 'Meh',   color: '#f8e2c4', stroke: '#c4955f' },
+  { value: 2, label: 'Bad',   color: '#c3dbf3', stroke: '#5c88bf' },
+  { value: 1, label: 'Awful', color: '#d9cff0', stroke: '#8a7bbd' },
 ];
 const moodByValue = Object.fromEntries(MOODS.map(m => [m.value, m]));
+
+// Hand-drawn pastel faces (100x100 viewBox)
+const INK = '#5a4038';
+const line = d => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+const CHEEKS = '<ellipse cx="26" cy="60" rx="7" ry="5" fill="#f0a49c" opacity=".55"/><ellipse cx="74" cy="60" rx="7" ry="5" fill="#f0a49c" opacity=".55"/>';
+const HAPPY_EYES = line('M26 46 Q33 36 40 46') + line('M60 46 Q67 36 74 46');
+const OPEN_MOUTH = d => `<path d="${d}" fill="#e57f72" stroke="#8b4a46" stroke-width="3" stroke-linejoin="round"/>`;
+const ray = d => line(d).replace(INK, '#f2c45a');
+const FACE_PARTS = {
+  5: ray('M12 28 L5 24') + ray('M29 11 L26 4') + ray('M88 28 L95 24') + ray('M71 11 L74 4')
+     + CHEEKS + HAPPY_EYES + OPEN_MOUTH('M38 56 H62 Q62 73 50 73 Q38 73 38 56 Z'),
+  4: CHEEKS + HAPPY_EYES + line('M41 60 Q50 69 59 60'),
+  3: CHEEKS + `<ellipse cx="36" cy="46" rx="4.5" ry="6" fill="${INK}"/><ellipse cx="64" cy="46" rx="4.5" ry="6" fill="${INK}"/>` + line('M43 63 H57'),
+  2: CHEEKS + `<path d="M30 45 A6.5 6.5 0 0 0 43 45 Z" fill="${INK}"/><path d="M57 45 A6.5 6.5 0 0 0 70 45 Z" fill="${INK}"/>`
+     + line('M28 40 L42 36') + line('M58 36 L72 40') + line('M40 67 Q50 58 60 67'),
+  1: line('M28 37 L41 44 L28 51') + line('M72 37 L59 44 L72 51')
+     + '<path d="M25 54 Q18 64 25 67 Q32 64 25 54 Z M75 54 Q68 64 75 67 Q82 64 75 54 Z" fill="#a7cdec" stroke="#6ea4d6" stroke-width="2"/>'
+     + OPEN_MOUTH('M40 72 Q40 59 50 59 Q60 59 60 72 Z'),
+};
+
+function face(value, attrs = 'class="face"') {
+  const m = moodByValue[value];
+  return `<svg ${attrs} viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="50" r="38" fill="${m.color}" stroke="${m.stroke}" stroke-width="4"/>
+    <path d="M27 34 Q33 22 46 18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+    ${FACE_PARTS[value]}
+  </svg>`;
+}
 
 const WEATHER = [
   { id: 'sunny',  label: 'Sunny',  emoji: '☀️' },
@@ -107,7 +135,7 @@ function toast(msg) {
 function buildTodayControls() {
   $('mood-options').innerHTML = MOODS.map(m => `
     <button type="button" class="mood-btn" data-mood="${m.value}" role="radio" aria-checked="false">
-      <span class="emoji">${m.emoji}</span>${m.label}
+      <span class="emoji">${face(m.value)}</span>${m.label}
     </button>`).join('');
 
   $('weather-options').innerHTML = WEATHER.map(w => `
@@ -239,7 +267,7 @@ async function saveEntry() {
     await db.put(entry);
     entries.set(entry.date, entry);
     renderForm();
-    toast(`Saved ${moodByValue[entry.mood].emoji}`);
+    toast("Saved ✨");
   } catch {
     toast('Could not save. Storage may be full.');
   }
@@ -289,7 +317,7 @@ function renderMonth() {
     html += `
       <button type="button" class="${classes.join(' ')}" data-date="${key}" ${key > today ? 'disabled' : ''}>
         <span class="num">${d}</span>
-        <span class="emoji">${entry ? moodByValue[entry.mood].emoji : ''}</span>
+        <span class="emoji">${entry ? face(entry.mood) : ''}</span>
       </button>`;
   }
   $('calendar').innerHTML = html;
@@ -321,7 +349,7 @@ function renderDayDetail() {
   box.innerHTML = `
     <div class="card">
       <div class="detail-head">
-        <span class="emoji">${mood.emoji}</span>
+        <span class="emoji">${face(mood.value)}</span>
         <div>
           <h2>${mood.label}</h2>
           <p>${dateLabel}</p>
@@ -399,7 +427,7 @@ function renderStats() {
 
   $('stat-grid').innerHTML = `
     <div class="stat">
-      <div class="big">${avgMood ? `${moodByValue[Math.round(avgMood)].emoji} ${avgMood.toFixed(1)}` : '–'}</div>
+      <div class="big">${avgMood ? `${face(Math.round(avgMood))} ${avgMood.toFixed(1)}` : '–'}</div>
       <div class="label">Avg mood</div>
     </div>
     <div class="stat">
@@ -417,7 +445,7 @@ function renderStats() {
     <div class="count">
       <span class="n">${counts[i]}</span>
       <div class="bar-wrap"><div class="bar" style="height:${(counts[i] / max) * 100}%;background:${m.color}"></div></div>
-      <span class="emoji">${m.emoji}</span>
+      <span class="emoji">${face(m.value)}</span>
     </div>`).join('');
 }
 
@@ -432,10 +460,10 @@ function moodChartSvg(days) {
 
   let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mood chart">`;
 
-  // Horizontal guides with emoji labels
+  // Horizontal guides with face labels
   MOODS.forEach(m => {
     svg += `<line x1="${left}" x2="${W - right}" y1="${y(m.value)}" y2="${y(m.value)}" stroke="#efe7f2" stroke-dasharray="3 4"/>`;
-    svg += `<text x="${left - 8}" y="${y(m.value)}" font-size="15" text-anchor="end" dominant-baseline="central">${m.emoji}</text>`;
+    svg += face(m.value, `x="${left - 26}" y="${y(m.value) - 10}" width="20" height="20"`);
   });
 
   // X labels
@@ -458,7 +486,7 @@ function moodChartSvg(days) {
   }
   const r = n === 7 ? 7 : 4.5;
   points.forEach(p => {
-    svg += `<circle cx="${x(p.i)}" cy="${y(p.entry.mood)}" r="${r}" fill="${moodByValue[p.entry.mood].color}" stroke="#8f78d6" stroke-width="2"/>`;
+    svg += `<circle cx="${x(p.i)}" cy="${y(p.entry.mood)}" r="${r}" fill="${moodByValue[p.entry.mood].color}" stroke="${moodByValue[p.entry.mood].stroke}" stroke-width="2"/>`;
   });
 
   return svg + '</svg>';
