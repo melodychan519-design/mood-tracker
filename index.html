@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fdf6f0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Mood">
+  <title>Mood Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <!-- Today / daily log -->
+    <section id="view-today" class="view active">
+      <header class="view-header">
+        <p class="eyebrow" id="today-date"></p>
+        <h1>How was your day?</h1>
+      </header>
+
+      <div class="nudge hidden" id="backup-nudge">
+        <span>💾 It's been a while since your last backup.</span>
+        <button type="button" id="backup-nudge-btn">Back up</button>
+      </div>
+
+      <div class="card">
+        <div class="mood-row" id="mood-options" role="radiogroup" aria-label="Mood"></div>
+      </div>
+
+      <div class="card">
+        <div class="field-head">
+          <h2>🔋 Social battery</h2>
+          <span class="value-pill" id="social-value">50%</span>
+        </div>
+        <input type="range" id="social" min="0" max="100" step="5" value="50" aria-label="Social battery">
+        <div class="range-labels"><span>Drained</span><span>Full</span></div>
+      </div>
+
+      <div class="card">
+        <h2>🌤️ Weather</h2>
+        <div class="chip-row" id="weather-options" role="radiogroup" aria-label="Weather"></div>
+      </div>
+
+      <div class="card">
+        <h2>😴 Sleep</h2>
+        <div class="stepper">
+          <button type="button" class="step-btn" id="sleep-minus" aria-label="Less sleep">−</button>
+          <span class="stepper-value"><span id="sleep-value">7</span> h</span>
+          <button type="button" class="step-btn" id="sleep-plus" aria-label="More sleep">+</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📝 Notes</h2>
+        <textarea id="note" rows="4" placeholder="What happened today?"></textarea>
+      </div>
+
+      <div class="card">
+        <h2>📷 Photo <span class="optional">optional</span></h2>
+        <div id="photo-preview" class="photo-preview hidden">
+          <img id="photo-img" alt="Photo of the day">
+          <button type="button" class="photo-remove" id="photo-remove" aria-label="Remove photo">✕</button>
+        </div>
+        <label class="photo-add" id="photo-add">
+          <input type="file" id="photo-input" accept="image/*" hidden>
+          + Add photo
+        </label>
+      </div>
+
+      <button type="button" class="primary-btn" id="save-btn">Save today</button>
+      <button type="button" class="link-btn hidden" id="back-today-btn">Back to today</button>
+    </section>
+
+    <!-- Month view -->
+    <section id="view-month" class="view">
+      <header class="month-nav">
+        <button type="button" class="nav-btn" id="month-prev" aria-label="Previous month">‹</button>
+        <h1 id="month-title"></h1>
+        <button type="button" class="nav-btn" id="month-next" aria-label="Next month">›</button>
+      </header>
+      <div class="card calendar-card">
+        <div class="weekdays">
+          <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+        </div>
+        <div class="calendar" id="calendar"></div>
+      </div>
+      <div id="day-detail"></div>
+    </section>
+
+    <!-- Stats -->
+    <section id="view-stats" class="view">
+      <header class="view-header">
+        <h1>Stats</h1>
+      </header>
+      <div class="segmented" role="tablist">
+        <button type="button" class="seg active" data-range="week">Week</button>
+        <button type="button" class="seg" data-range="month">Month</button>
+      </div>
+      <div class="period-nav">
+        <button type="button" class="nav-btn" id="stats-prev" aria-label="Previous">‹</button>
+        <span id="stats-title"></span>
+        <button type="button" class="nav-btn" id="stats-next" aria-label="Next">›</button>
+      </div>
+      <div class="card">
+        <h2>Mood</h2>
+        <div id="mood-chart" class="chart"></div>
+      </div>
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="card">
+        <h2>Mood count</h2>
+        <div id="mood-count" class="count-row"></div>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section id="view-settings" class="view">
+      <header class="view-header">
+        <h1>Settings</h1>
+      </header>
+      <div class="card">
+        <h2>💾 Backup</h2>
+        <p class="hint">Your data is only stored on this iPhone. Export a backup now and then and keep it in Files or iCloud Drive.</p>
+        <button type="button" class="secondary-btn" id="export-btn">Export backup</button>
+        <label class="secondary-btn">
+          <input type="file" id="import-input" accept="application/json,.json" hidden>
+          Import backup
+        </label>
+        <p class="hint" id="backup-info"></p>
+      </div>
+      <div class="card">
+        <h2>🗑️ Delete data</h2>
+        <p class="hint">Deletes every entry and photo from this device. This cannot be undone.</p>
+        <button type="button" class="danger-btn" id="delete-btn">Delete all data</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button type="button" class="tab active" data-view="today"><span>✏️</span>Today</button>
+    <button type="button" class="tab" data-view="month"><span>📅</span>Month</button>
+    <button type="button" class="tab" data-view="stats"><span>📈</span>Stats</button>
+    <button type="button" class="tab" data-view="settings"><span>⚙️</span>Settings</button>
+  </nav>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
