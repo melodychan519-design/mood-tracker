@@ -379,8 +379,12 @@ function renderMonth() {
   const offset = (new Date(y, m, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(y, m + 1, 0).getDate();
 
-  $('month-title').textContent = fmt(cursor, { month: 'long', year: 'numeric' });
   const now = new Date();
+  const hour = now.getHours();
+  $('month-greeting').textContent =
+    hour < 5 ? 'Good night' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  $('month-date').textContent = fmt(now, { weekday: 'long', day: 'numeric', month: 'short' });
+  $('month-title').textContent = fmt(cursor, { month: 'long', year: 'numeric' });
   $('month-next').disabled = y > now.getFullYear() || (y === now.getFullYear() && m >= now.getMonth());
   $('month-next').style.visibility = $('month-next').disabled ? 'hidden' : 'visible';
 
@@ -752,6 +756,8 @@ async function init() {
     if (document.visibilityState === 'visible' && state.followToday && state.editingDate !== todayKey()) {
       loadForm(todayKey());
     }
+    // Refresh the greeting and today's highlight
+    if (document.visibilityState === 'visible' && document.querySelector('#view-month.active')) renderMonth();
   });
 
   // Ask iOS to keep our data (reduces the chance it gets cleared)

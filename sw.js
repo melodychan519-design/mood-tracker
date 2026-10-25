@@ -1,6 +1,6 @@
 // Caches the app files so it opens offline.
 // Bump CACHE_VERSION whenever you change any app file, so iPhones pick up the update.
-const CACHE_VERSION = 'mood-v6';
+const CACHE_VERSION = 'mood-v8';
 const FILES = [
   './',
   'index.html',
@@ -12,7 +12,7 @@ const FILES = [
   'apple-touch-icon.png',
   ...['battery-full', 'battery-high', 'battery-medium', 'battery-low', 'battery-verylow',
       'sunny', 'partly', 'cloudy', 'rainy', 'stormy', 'snowy',
-      'sleep', 'notes', 'camera', 'pencil', 'month', 'stats', 'settings'].map(n => `ui-${n}.png`),
+      'sleep', 'notes', 'camera', 'pencil', 'month', 'stats', 'settings', 'bin', 'backup'].map(n => `ui-${n}.png`),
 ];
 
 self.addEventListener('install', event => {

@@ -24,7 +24,7 @@
       </header>
 
       <div class="nudge hidden" id="backup-nudge">
-        <span>💾 It's been a while since your last backup.</span>
+        <img class="ico" src="ui-backup.png" alt=""><span class="nudge-text">It's been a while since your last backup.</span>
         <button type="button" id="backup-nudge-btn">Back up</button>
       </div>
 
@@ -84,14 +84,18 @@
 
     <!-- Month view -->
     <section id="view-month" class="view active">
-      <header class="month-nav">
+      <header class="view-header">
+        <p class="eyebrow" id="month-date"></p>
+        <h1 id="month-greeting"></h1>
+      </header>
+      <div class="month-nav">
         <div class="month-switch">
           <button type="button" class="nav-btn" id="month-prev" aria-label="Previous month">‹</button>
-          <h1 id="month-title"></h1>
+          <h2 id="month-title"></h2>
           <button type="button" class="nav-btn" id="month-next" aria-label="Next month">›</button>
         </div>
         <button type="button" class="add-today" id="add-today-btn" aria-label="Add today's mood">+</button>
-      </header>
+      </div>
       <div class="card calendar-card">
         <div class="weekdays">
           <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
@@ -132,7 +136,7 @@
         <h1>Settings</h1>
       </header>
       <div class="card">
-        <h2>💾 Backup</h2>
+        <h2><img class="ico" src="ui-backup.png" alt="">Backup</h2>
         <p class="hint">Your data is only stored on this iPhone. Export a backup now and then and keep it in Files or iCloud Drive.</p>
         <button type="button" class="secondary-btn" id="export-btn">Export backup</button>
         <label class="secondary-btn">
@@ -142,7 +146,7 @@
         <p class="hint" id="backup-info"></p>
       </div>
       <div class="card">
-        <h2>🗑️ Delete data</h2>
+        <h2><img class="ico" src="ui-bin.png" alt="">Delete data</h2>
         <p class="hint">Deletes every entry and photo from this device. This cannot be undone.</p>
         <button type="button" class="danger-btn" id="delete-btn">Delete all data</button>
       </div>
