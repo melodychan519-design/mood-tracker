@@ -17,7 +17,7 @@
 <body>
   <main>
     <!-- Today / daily log -->
-    <section id="view-today" class="view active">
+    <section id="view-today" class="view">
       <header class="view-header">
         <p class="eyebrow" id="today-date"></p>
         <h1>How was your day?</h1>
@@ -53,6 +53,12 @@
           <span class="stepper-value"><span id="sleep-value">7</span> h</span>
           <button type="button" class="step-btn" id="sleep-plus" aria-label="More sleep">+</button>
         </div>
+        <div class="minute-row" id="sleep-minutes" role="radiogroup" aria-label="Minutes">
+          <button type="button" class="minute" data-min="0">00</button>
+          <button type="button" class="minute" data-min="15">15</button>
+          <button type="button" class="minute" data-min="30">30</button>
+          <button type="button" class="minute" data-min="45">45</button>
+        </div>
       </div>
 
       <div class="card">
@@ -77,11 +83,14 @@
     </section>
 
     <!-- Month view -->
-    <section id="view-month" class="view">
+    <section id="view-month" class="view active">
       <header class="month-nav">
-        <button type="button" class="nav-btn" id="month-prev" aria-label="Previous month">‹</button>
-        <h1 id="month-title"></h1>
-        <button type="button" class="nav-btn" id="month-next" aria-label="Next month">›</button>
+        <div class="month-switch">
+          <button type="button" class="nav-btn" id="month-prev" aria-label="Previous month">‹</button>
+          <h1 id="month-title"></h1>
+          <button type="button" class="nav-btn" id="month-next" aria-label="Next month">›</button>
+        </div>
+        <button type="button" class="add-today" id="add-today-btn" aria-label="Add today's mood">+</button>
       </header>
       <div class="card calendar-card">
         <div class="weekdays">
@@ -141,8 +150,8 @@
   </main>
 
   <nav class="tabbar">
-    <button type="button" class="tab active" data-view="today"><img src="ui-pencil.png" alt="">Today</button>
-    <button type="button" class="tab" data-view="month"><img src="ui-month.png" alt="">Month</button>
+    <button type="button" class="tab active" data-view="month"><img src="ui-month.png" alt="">Month</button>
+    <button type="button" class="tab" data-view="today"><img src="ui-pencil.png" alt="">Today</button>
     <button type="button" class="tab" data-view="stats"><img src="ui-stats.png" alt="">Stats</button>
     <button type="button" class="tab" data-view="settings"><img src="ui-settings.png" alt="">Settings</button>
   </nav>

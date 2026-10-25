@@ -66,6 +66,7 @@ const SLEEP_MIN = 0;
 const SLEEP_MAX = 16;
 const BACKUP_KEY = 'moodTracker.lastBackup';
 const BACKUP_NUDGE_DAYS = 30;
+const DOUBLE_TAP_MS = 350;
 
 // ---------- Date helpers ----------
 
@@ -76,6 +77,10 @@ const todayKey = () => keyOf(new Date());
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const startOfWeek = d => addDays(d, -((d.getDay() + 6) % 7)); // Monday
 const fmt = (d, opts) => d.toLocaleDateString('en-GB', opts);
+
+// Sleep is stored as decimal hours (7.25 = 7h 15m)
+const sleepParts = h => { const total = Math.round(h * 60); return { hours: Math.floor(total / 60), mins: total % 60 }; };
+const formatSleep = h => { const { hours, mins } = sleepParts(h); return mins ? `${hours}h ${mins}m` : `${hours}h`; };
 
 // ---------- Storage (IndexedDB) ----------
 
@@ -123,6 +128,7 @@ const state = {
   form: { ...DEFAULTS },
   monthCursor: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   selectedDay: null,
+  returnTo: null, // 'month' when the editor was opened from the calendar
   statsRange: 'week',
   statsAnchor: new Date(),
 };
@@ -140,6 +146,29 @@ function toast(msg) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ---------- Editing lock ----------
+
+// Days more than a month before today can't be added or changed.
+function lockBeforeKey() {
+  const t = new Date();
+  const daysInPrevMonth = new Date(t.getFullYear(), t.getMonth(), 0).getDate();
+  return keyOf(new Date(t.getFullYear(), t.getMonth() - 1, Math.min(t.getDate(), daysInPrevMonth)));
+}
+const isLocked = key => key < lockBeforeKey();
+const LOCKED_MSG = '🔒 Days older than a month can\'t be changed';
+
+function openEditor(key, returnTo = null) {
+  if (key > todayKey()) return;
+  if (isLocked(key)) {
+    toast(LOCKED_MSG);
+    return;
+  }
+  loadForm(key);
+  state.returnTo = returnTo;
+  renderForm();
+  switchView('today');
 }
 
 // ---------- Today (daily log) ----------
@@ -175,8 +204,13 @@ function buildTodayControls() {
     renderSocial();
   });
 
-  $('sleep-minus').addEventListener('click', () => changeSleep(-0.5));
-  $('sleep-plus').addEventListener('click', () => changeSleep(0.5));
+  $('sleep-minus').addEventListener('click', () => setSleep(state.form.sleep - 1));
+  $('sleep-plus').addEventListener('click', () => setSleep(state.form.sleep + 1));
+  $('sleep-minutes').addEventListener('click', e => {
+    const btn = e.target.closest('.minute');
+    if (!btn) return;
+    setSleep(sleepParts(state.form.sleep).hours + Number(btn.dataset.min) / 60);
+  });
 
   $('note').addEventListener('input', e => { state.form.note = e.target.value; });
 
@@ -198,12 +232,29 @@ function buildTodayControls() {
   });
 
   $('save-btn').addEventListener('click', saveEntry);
-  $('back-today-btn').addEventListener('click', () => loadForm(todayKey()));
+  $('back-today-btn').addEventListener('click', () => {
+    if (state.returnTo === 'month') {
+      state.returnTo = null;
+      switchView('month');
+    } else {
+      loadForm(todayKey());
+    }
+  });
 }
 
-function changeSleep(delta) {
-  state.form.sleep = Math.min(SLEEP_MAX, Math.max(SLEEP_MIN, state.form.sleep + delta));
-  $('sleep-value').textContent = state.form.sleep;
+function setSleep(hours) {
+  state.form.sleep = Math.min(SLEEP_MAX, Math.max(SLEEP_MIN, hours));
+  renderSleep();
+}
+
+function renderSleep() {
+  const { hours, mins } = sleepParts(state.form.sleep);
+  $('sleep-value').textContent = hours;
+  document.querySelectorAll('#sleep-minutes .minute').forEach(b => {
+    const on = Number(b.dataset.min) === Math.round(mins / 15) * 15;
+    b.classList.toggle('selected', on);
+    b.setAttribute('aria-checked', on);
+  });
 }
 
 function renderSocial() {
@@ -245,7 +296,7 @@ function renderForm() {
   });
 
   renderSocial();
-  $('sleep-value').textContent = f.sleep;
+  renderSleep();
   $('note').value = f.note;
 
   $('photo-preview').classList.toggle('hidden', !f.photo);
@@ -255,7 +306,9 @@ function renderForm() {
 
   const exists = entries.has(state.editingDate);
   $('save-btn').textContent = exists ? 'Update' : (isToday ? 'Save today' : 'Save');
-  $('back-today-btn').classList.toggle('hidden', isToday);
+  const back = $('back-today-btn');
+  back.textContent = state.returnTo === 'month' ? 'Back to calendar' : 'Back to today';
+  back.classList.toggle('hidden', isToday && state.returnTo !== 'month');
 
   renderBackupNudge();
 }
@@ -264,6 +317,10 @@ async function saveEntry() {
   const f = state.form;
   if (!f.mood) {
     toast('Pick a mood first');
+    return;
+  }
+  if (isLocked(state.editingDate)) {
+    toast(LOCKED_MSG);
     return;
   }
   const entry = {
@@ -279,8 +336,16 @@ async function saveEntry() {
   try {
     await db.put(entry);
     entries.set(entry.date, entry);
+    toast('Saved ✨');
+    if (state.returnTo === 'month') {
+      // Go back to the calendar with the saved day selected
+      const d = parseKey(entry.date);
+      state.returnTo = null;
+      state.selectedDay = entry.date;
+      state.monthCursor = new Date(d.getFullYear(), d.getMonth(), 1);
+      switchView('month');
+    }
     renderForm();
-    toast("Saved ✨");
   } catch {
     toast('Could not save. Storage may be full.');
   }
@@ -352,7 +417,7 @@ function renderDayDetail() {
       <div class="card">
         <h2>${dateLabel}</h2>
         <p class="hint">Nothing logged on this day.</p>
-        <button type="button" class="secondary-btn" data-edit="${key}">Add entry</button>
+        ${editControl(key, 'Add entry')}
       </div>`;
     return;
   }
@@ -370,29 +435,49 @@ function renderDayDetail() {
       </div>
       <div class="detail-tags">
         ${weather ? `<span class="tag"><img class="tag-ico" src="${weather.icon}" alt="">${weather.label}</span>` : ''}
-        <span class="tag"><img class="tag-ico" src="ui-sleep.png" alt="">${entry.sleep} h</span>
+        <span class="tag"><img class="tag-ico" src="ui-sleep.png" alt="">${formatSleep(entry.sleep)}</span>
         <span class="tag"><img class="tag-ico" src="${batteryIcon(entry.social)}" alt="">${entry.social}%</span>
       </div>
       ${entry.note ? `<p class="detail-note">${escapeHtml(entry.note)}</p>` : ''}
       ${entry.photo ? `<img class="detail-photo" src="${entry.photo}" alt="Photo from ${dateLabel}">` : ''}
-      <button type="button" class="secondary-btn" data-edit="${key}">Edit</button>
+      ${editControl(key, 'Edit')}
     </div>`;
+}
+
+function editControl(key, label) {
+  return isLocked(key)
+    ? `<p class="hint locked">${LOCKED_MSG}.</p>`
+    : `<button type="button" class="secondary-btn" data-edit="${key}">${label}</button>
+       <p class="hint center">Tip: double-tap a date to add or change its mood.</p>`;
 }
 
 function setupMonth() {
   $('month-prev').addEventListener('click', () => shiftMonth(-1));
   $('month-next').addEventListener('click', () => shiftMonth(1));
+  $('add-today-btn').addEventListener('click', () => openEditor(todayKey(), 'month'));
+
+  let lastTap = { key: null, time: 0 };
+  let scrollTimer;
   $('calendar').addEventListener('click', e => {
     const btn = e.target.closest('.day');
     if (!btn || btn.disabled) return;
-    state.selectedDay = btn.dataset.date;
+    const key = btn.dataset.date;
+    const now = Date.now();
+    clearTimeout(scrollTimer);
+    if (lastTap.key === key && now - lastTap.time < DOUBLE_TAP_MS) {
+      lastTap = { key: null, time: 0 };
+      openEditor(key, 'month');
+      return;
+    }
+    lastTap = { key, time: now };
+    state.selectedDay = key;
     renderMonth();
+    // Wait before scrolling so a second tap still lands on the same date
+    scrollTimer = setTimeout(() => $('day-detail').scrollIntoView({ behavior: 'smooth', block: 'end' }), DOUBLE_TAP_MS);
   });
   $('day-detail').addEventListener('click', e => {
     const btn = e.target.closest('[data-edit]');
-    if (!btn) return;
-    loadForm(btn.dataset.edit);
-    switchView('today');
+    if (btn) openEditor(btn.dataset.edit, 'month');
   });
 }
 
@@ -444,7 +529,7 @@ function renderStats() {
       <div class="label">Avg mood</div>
     </div>
     <div class="stat">
-      <div class="big">${avgSleep !== null ? `${avgSleep.toFixed(1)}h` : '–'}</div>
+      <div class="big">${avgSleep !== null ? formatSleep(avgSleep) : '–'}</div>
       <div class="label">Avg sleep</div>
     </div>
     <div class="stat">
@@ -639,6 +724,8 @@ function setupTabs() {
     if (t.dataset.view === 'today' && state.editingDate !== todayKey() && document.querySelector('#view-today.active')) {
       loadForm(todayKey()); // tapping Today again returns to today
     }
+    state.returnTo = null;
+    renderForm();
     switchView(t.dataset.view);
   }));
 }
@@ -658,6 +745,7 @@ async function init() {
     toast('Could not open storage');
   }
   loadForm(todayKey());
+  switchView('month'); // the calendar is the home screen
 
   // If the app stays open past midnight, move the log to the new day
   document.addEventListener('visibilitychange', () => {

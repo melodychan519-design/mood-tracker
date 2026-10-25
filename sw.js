@@ -1,6 +1,6 @@
 // Caches the app files so it opens offline.
 // Bump CACHE_VERSION whenever you change any app file, so iPhones pick up the update.
-const CACHE_VERSION = 'mood-v3';
+const CACHE_VERSION = 'mood-v6';
 const FILES = [
   './',
   'index.html',

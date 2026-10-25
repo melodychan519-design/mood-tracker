@@ -33,6 +33,7 @@ body {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
+  touch-action: manipulation; /* no double-tap zoom, so double-tapping dates works */
 }
 
 main {
@@ -64,6 +65,8 @@ h2 { font-size: 16px; margin: 0 0 12px; font-weight: 600; display: flex; align-i
 .hidden { display: none !important; }
 .optional { font-weight: 400; font-size: 13px; color: var(--muted); }
 .hint { color: var(--muted); font-size: 14px; margin: 0 0 12px; line-height: 1.4; }
+.hint.center { text-align: center; font-size: 13px; margin: 0; }
+.hint.locked { margin: 0; }
 
 /* Backup nudge */
 .nudge {
@@ -143,6 +146,13 @@ input[type="range"]::-moz-range-thumb {
   font-size: 26px; font-weight: 600; cursor: pointer;
 }
 .step-btn:active { background: var(--accent); color: #fff; }
+.minute-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+.minute {
+  padding: 10px 0; border: 2px solid var(--line); border-radius: 12px;
+  background: #fff; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer;
+}
+.minute::after { content: " min"; font-weight: 500; font-size: 12px; }
+.minute.selected { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
 .stepper-value { font-size: 28px; font-weight: 700; min-width: 90px; text-align: center; }
 
 /* Notes */
@@ -182,7 +192,15 @@ textarea:focus { outline: none; border-color: var(--accent); }
 
 /* Month view */
 .month-nav, .period-nav { display: flex; align-items: center; justify-content: space-between; margin: 8px 0 16px; }
-.month-nav h1 { font-size: 22px; }
+.month-switch { display: flex; align-items: center; gap: 6px; }
+.month-switch h1 { font-size: 22px; min-width: 160px; text-align: center; }
+.add-today {
+  width: 48px; height: 48px; border-radius: 50%; border: none;
+  background: var(--accent-strong); color: #fff;
+  font-size: 30px; font-weight: 400; line-height: 1; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(143, 120, 214, 0.35);
+}
+.add-today:active { transform: scale(0.94); }
 .period-nav { margin: 0 0 14px; font-weight: 600; }
 .nav-btn {
   width: 40px; height: 40px; border-radius: 50%; border: none;
@@ -190,18 +208,24 @@ textarea:focus { outline: none; border-color: var(--accent); }
   font-size: 24px; line-height: 1; cursor: pointer;
   box-shadow: 0 2px 8px rgba(143, 120, 214, 0.08);
 }
-.calendar-card { padding: 12px 8px; }
+/* Month view fills the screen between the header and the tab bar */
+#view-month.active {
+  display: flex; flex-direction: column;
+  min-height: calc(100vh - var(--safe-top) - var(--tabbar-h) - var(--safe-bottom) - 40px);
+  min-height: calc(100dvh - var(--safe-top) - var(--tabbar-h) - var(--safe-bottom) - 40px);
+}
+.calendar-card { flex: 1; display: flex; flex-direction: column; padding: 14px 6px; }
 .weekdays, .calendar { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
-.weekdays { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
-.calendar { row-gap: 4px; }
+.weekdays { font-size: 14px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+.calendar { flex: 1; grid-auto-rows: 1fr; row-gap: 6px; }
 .day {
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px;
-  min-height: 58px; padding: 6px 0 4px; margin: 0 2px;
-  border: none; border-radius: 12px; background: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-height: 72px; padding: 4px 0; margin: 0 2px;
+  border: none; border-radius: 14px; background: none;
   font: inherit; color: var(--text); cursor: pointer;
 }
-.day .num { font-size: 13px; font-weight: 600; }
-.day .emoji { width: 28px; height: 28px; }
+.day .num { font-size: 16px; font-weight: 600; }
+.day .emoji { width: 42px; height: 42px; }
 .day.future { color: #d6d0dc; cursor: default; }
 .day.today .num { background: var(--accent-strong); color: #fff; border-radius: 999px; padding: 0 7px; }
 .day.selected { background: var(--accent-soft); }
