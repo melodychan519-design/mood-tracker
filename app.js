@@ -40,14 +40,26 @@ function face(value, attrs = 'class="face"') {
 }
 
 const WEATHER = [
-  { id: 'sunny',  label: 'Sunny',  emoji: '☀️' },
-  { id: 'partly', label: 'Partly', emoji: '⛅' },
-  { id: 'cloudy', label: 'Cloudy', emoji: '☁️' },
-  { id: 'rainy',  label: 'Rainy',  emoji: '🌧️' },
-  { id: 'stormy', label: 'Stormy', emoji: '⛈️' },
-  { id: 'snowy',  label: 'Snowy',  emoji: '❄️' },
+  { id: 'sunny',  label: 'Sunny',  icon: 'ui-sunny.png' },
+  { id: 'partly', label: 'Partly', icon: 'ui-partly.png' },
+  { id: 'cloudy', label: 'Cloudy', icon: 'ui-cloudy.png' },
+  { id: 'rainy',  label: 'Rainy',  icon: 'ui-rainy.png' },
+  { id: 'stormy', label: 'Stormy', icon: 'ui-stormy.png' },
+  { id: 'snowy',  label: 'Snowy',  icon: 'ui-snowy.png' },
 ];
 const weatherById = Object.fromEntries(WEATHER.map(w => [w.id, w]));
+
+// Social battery level -> icon (checked from highest threshold down)
+const BATTERY_LEVELS = [
+  { min: 80, icon: 'ui-battery-full.png' },
+  { min: 60, icon: 'ui-battery-high.png' },
+  { min: 40, icon: 'ui-battery-medium.png' },
+  { min: 20, icon: 'ui-battery-low.png' },
+  { min: 0,  icon: 'ui-battery-verylow.png' },
+];
+const batteryIcon = level => BATTERY_LEVELS.find(b => level >= b.min).icon;
+// Preload so the icon swaps instantly while sliding
+BATTERY_LEVELS.forEach(b => { new Image().src = b.icon; });
 
 const DEFAULTS = { mood: null, social: 50, weather: null, sleep: 7, note: '', photo: null };
 const SLEEP_MIN = 0;
@@ -140,7 +152,7 @@ function buildTodayControls() {
 
   $('weather-options').innerHTML = WEATHER.map(w => `
     <button type="button" class="chip" data-weather="${w.id}" role="radio" aria-checked="false">
-      <span class="emoji">${w.emoji}</span>${w.label}
+      <img class="emoji" src="${w.icon}" alt="">${w.label}
     </button>`).join('');
 
   $('mood-options').addEventListener('click', e => {
@@ -199,6 +211,7 @@ function renderSocial() {
   slider.value = state.form.social;
   slider.style.setProperty('--fill', `${state.form.social}%`);
   $('social-value').textContent = `${state.form.social}%`;
+  $('social-icon').src = batteryIcon(state.form.social);
 }
 
 function loadForm(dateKey) {
@@ -356,9 +369,9 @@ function renderDayDetail() {
         </div>
       </div>
       <div class="detail-tags">
-        ${weather ? `<span class="tag">${weather.emoji} ${weather.label}</span>` : ''}
-        <span class="tag">😴 ${entry.sleep} h</span>
-        <span class="tag">🔋 ${entry.social}%</span>
+        ${weather ? `<span class="tag"><img class="tag-ico" src="${weather.icon}" alt="">${weather.label}</span>` : ''}
+        <span class="tag"><img class="tag-ico" src="ui-sleep.png" alt="">${entry.sleep} h</span>
+        <span class="tag"><img class="tag-ico" src="${batteryIcon(entry.social)}" alt="">${entry.social}%</span>
       </div>
       ${entry.note ? `<p class="detail-note">${escapeHtml(entry.note)}</p>` : ''}
       ${entry.photo ? `<img class="detail-photo" src="${entry.photo}" alt="Photo from ${dateLabel}">` : ''}

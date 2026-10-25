@@ -34,7 +34,7 @@
 
       <div class="card">
         <div class="field-head">
-          <h2>🔋 Social battery</h2>
+          <h2><img class="ico battery" id="social-icon" src="ui-battery-medium.png" alt="">Social battery</h2>
           <span class="value-pill" id="social-value">50%</span>
         </div>
         <input type="range" id="social" min="0" max="100" step="5" value="50" aria-label="Social battery">
@@ -42,12 +42,12 @@
       </div>
 
       <div class="card">
-        <h2>🌤️ Weather</h2>
+        <h2><img class="ico" src="ui-partly.png" alt="">Weather</h2>
         <div class="chip-row" id="weather-options" role="radiogroup" aria-label="Weather"></div>
       </div>
 
       <div class="card">
-        <h2>😴 Sleep</h2>
+        <h2><img class="ico" src="ui-sleep.png" alt="">Sleep</h2>
         <div class="stepper">
           <button type="button" class="step-btn" id="sleep-minus" aria-label="Less sleep">−</button>
           <span class="stepper-value"><span id="sleep-value">7</span> h</span>
@@ -56,12 +56,12 @@
       </div>
 
       <div class="card">
-        <h2>📝 Notes</h2>
+        <h2><img class="ico" src="ui-notes.png" alt="">Notes</h2>
         <textarea id="note" rows="4" placeholder="What happened today?"></textarea>
       </div>
 
       <div class="card">
-        <h2>📷 Photo <span class="optional">optional</span></h2>
+        <h2><img class="ico" src="ui-camera.png" alt="">Photo <span class="optional">optional</span></h2>
         <div id="photo-preview" class="photo-preview hidden">
           <img id="photo-img" alt="Photo of the day">
           <button type="button" class="photo-remove" id="photo-remove" aria-label="Remove photo">✕</button>
@@ -141,10 +141,10 @@
   </main>
 
   <nav class="tabbar">
-    <button type="button" class="tab active" data-view="today"><span>✏️</span>Today</button>
-    <button type="button" class="tab" data-view="month"><span>📅</span>Month</button>
-    <button type="button" class="tab" data-view="stats"><span>📈</span>Stats</button>
-    <button type="button" class="tab" data-view="settings"><span>⚙️</span>Settings</button>
+    <button type="button" class="tab active" data-view="today"><img src="ui-pencil.png" alt="">Today</button>
+    <button type="button" class="tab" data-view="month"><img src="ui-month.png" alt="">Month</button>
+    <button type="button" class="tab" data-view="stats"><img src="ui-stats.png" alt="">Stats</button>
+    <button type="button" class="tab" data-view="settings"><img src="ui-settings.png" alt="">Settings</button>
   </nav>
 
   <div class="toast" id="toast" role="status"></div>
