@@ -1,6 +1,6 @@
 // Caches the app files so it opens offline.
 // Bump CACHE_VERSION whenever you change any app file, so iPhones pick up the update.
-const CACHE_VERSION = 'mood-v8';
+const CACHE_VERSION = 'mood-v11';
 const FILES = [
   './',
   'index.html',
@@ -31,7 +31,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: 'no-cache' }) // always check GitHub for a newer copy
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE_VERSION).then(cache => cache.put(event.request, copy));

@@ -67,6 +67,7 @@ const SLEEP_MAX = 16;
 const BACKUP_KEY = 'moodTracker.lastBackup';
 const BACKUP_NUDGE_DAYS = 30;
 const DOUBLE_TAP_MS = 350;
+const BAR_MAX_PX = 120; // tallest bar in the mood count chart
 
 // ---------- Date helpers ----------
 
@@ -371,6 +372,59 @@ function compressImage(file, maxSize = 1200, quality = 0.8) {
 
 // ---------- Month view ----------
 
+const GREETINGS = {
+  morning: [ // 5 AM – 11 AM
+    'Good morning, sunshine! ☀️',
+    'A fresh day, a fresh start 🌷',
+    "How's your little heart today? 💗",
+    'Rise and shine, sleepyhead! 🌼',
+    "Let's make today a lovely one ✨",
+  ],
+  afternoon: [ // 11 AM – 5 PM
+    'A little midday check-in 🌻',
+    "How's your day blooming? 🌸",
+    'Sending you some afternoon sunshine ☀️',
+    "You've made it halfway! 💛",
+    "What's your mood looking like? 🌈",
+  ],
+  evening: [ // 5 PM – 9 PM
+    'Time to unwind, little star 🌟',
+    'How did today treat you? 🌷',
+    "Let's check in with your heart 💕",
+    'You did your best today 🌙',
+    'A cozy moment just for you 🧸',
+  ],
+  night: [ // 9 PM – 5 AM
+    'Still awake, little moon? 🌙',
+    "Let's tuck today's feelings away ✨",
+    "How's your heart tonight? 💫",
+    'Every feeling deserves a little love 💗',
+    'Sweet dreams are on their way 💤',
+  ],
+};
+
+// Indexed by Date.getDay(): 0 = Sunday
+const WEEKDAY_HEADINGS = [
+  'A little rest for your soul ☁️',
+  'New week, new little adventures! 🌱',
+  'One little step at a time 🐾',
+  'Halfway through the week! 🌈',
+  'Almost there, little sunshine! 🌻',
+  'Happy Friday! You made it! 🎀',
+  'Slow down and enjoy today 🍓',
+];
+
+// Picks a greeting for the time of day; stays the same until the period changes
+function greeting(now) {
+  const h = now.getHours();
+  const period = h >= 5 && h < 11 ? 'morning' : h >= 11 && h < 17 ? 'afternoon' : h >= 17 && h < 21 ? 'evening' : 'night';
+  const seed = `${keyOf(now)}-${period}`;
+  let hash = 0;
+  for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  const list = GREETINGS[period];
+  return list[hash % list.length];
+}
+
 function renderMonth() {
   const cursor = state.monthCursor;
   const y = cursor.getFullYear();
@@ -380,9 +434,8 @@ function renderMonth() {
   const daysInMonth = new Date(y, m + 1, 0).getDate();
 
   const now = new Date();
-  const hour = now.getHours();
-  $('month-greeting').textContent =
-    hour < 5 ? 'Good night' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  $('month-greeting').textContent = greeting(now);
+  $('month-subtitle').textContent = WEEKDAY_HEADINGS[now.getDay()];
   $('month-date').textContent = fmt(now, { weekday: 'long', day: 'numeric', month: 'short' });
   $('month-title').textContent = fmt(cursor, { month: 'long', year: 'numeric' });
   $('month-next').disabled = y > now.getFullYear() || (y === now.getFullYear() && m >= now.getMonth());
@@ -527,28 +580,32 @@ function renderStats() {
   const avgSleep = logged.length ? avg(logged.map(e => e.sleep)) : null;
   const avgSocial = logged.length ? avg(logged.map(e => e.social)) : null;
 
-  $('stat-grid').innerHTML = `
-    <div class="stat">
-      <div class="big">${avgMood ? `${face(Math.round(avgMood))} ${avgMood.toFixed(1)}` : '–'}</div>
-      <div class="label">Avg mood</div>
-    </div>
-    <div class="stat">
-      <div class="big">${avgSleep !== null ? formatSleep(avgSleep) : '–'}</div>
-      <div class="label">Avg sleep</div>
-    </div>
-    <div class="stat">
-      <div class="big">${avgSocial !== null ? `${Math.round(avgSocial)}%` : '–'}</div>
-      <div class="label">Social battery</div>
+  const empty = !logged.length;
+  const tile = (icon, value, label) => `
+    <div class="stat${empty ? ' empty' : ''}">
+      <div class="stat-ico">${icon}</div>
+      <div class="big">${value}</div>
+      <div class="label">${label}</div>
     </div>`;
+  $('stat-grid').innerHTML =
+    tile(face(empty ? 3 : Math.round(avgMood)), empty ? '–' : avgMood.toFixed(1), 'Avg mood') +
+    tile('<img src="ui-sleep.png" alt="">', empty ? '–' : formatSleep(avgSleep), 'Avg sleep') +
+    tile(`<img class="battery" src="${batteryIcon(empty ? 50 : avgSocial)}" alt="">`, empty ? '–' : `${Math.round(avgSocial)}%`, 'Social battery');
 
+  // Bar heights are relative to the most common mood in the period
   const counts = MOODS.map(m => logged.filter(e => e.mood === m.value).length);
   const max = Math.max(1, ...counts);
-  $('mood-count').innerHTML = MOODS.map((m, i) => `
-    <div class="count">
-      <span class="n">${counts[i]}</span>
-      <div class="bar-wrap"><div class="bar" style="height:${(counts[i] / max) * 100}%;background:${m.color}"></div></div>
-      <span class="emoji">${face(m.value)}</span>
-    </div>`).join('');
+  $('mood-count').innerHTML = `
+    <div class="count-bars">
+      ${MOODS.map((m, i) => `
+        <div class="count">
+          <span class="n">${counts[i]}</span>
+          <div class="bar${counts[i] ? '' : ' zero'}" style="height:${counts[i] ? Math.max(10, (counts[i] / max) * BAR_MAX_PX) : 4}px;background:${m.color};border-color:${m.stroke}"></div>
+        </div>`).join('')}
+    </div>
+    <div class="count-faces">
+      ${MOODS.map(m => `<span class="emoji">${face(m.value)}</span>`).join('')}
+    </div>`;
 }
 
 function moodChartSvg(days) {
